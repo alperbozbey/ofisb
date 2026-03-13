@@ -1,14 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Filter, Download, MoreHorizontal, ArrowUpRight, ArrowDownRight, Search } from 'lucide-react';
 
-const transactions = [
-  { id: 'TRX-001', date: '12 Eki 2024', description: 'Satış Faturası Tahsilatı', category: 'Satış Gelirleri', account: 'Garanti Bankası', amount: '₺12.500,00', type: 'in' },
-  { id: 'TRX-002', date: '15 Eki 2024', description: 'Ofis Kırtasiye Gideri', category: 'Kırtasiye', account: 'Nakit Kasa', amount: '₺850,00', type: 'out' },
-  { id: 'TRX-003', date: '01 Eyl 2024', description: 'Yazılım Lisans Yenileme', category: 'Yazılım', account: 'Kredi Kartı', amount: '₺4.200,00', type: 'out' },
-  { id: 'TRX-004', date: '20 Eki 2024', description: 'Proje Avans Ödemesi', category: 'Satış Gelirleri', account: 'Ziraat Bankası', amount: '₺28.400,00', type: 'in' },
-  { id: 'TRX-005', date: '05 Eki 2024', description: 'Elektrik Faturası', category: 'Faturalar', account: 'Garanti Bankası', amount: '₺1.150,00', type: 'out' },
-  { id: 'TRX-006', date: '01 Eki 2024', description: 'Personel Maaşları', category: 'Maaş', account: 'Ziraat Bankası', amount: '₺45.000,00', type: 'out' },
-];
+const transactions: any[] = [];
 
 export default function Transactions() {
   const [activeTab, setActiveTab] = useState('all');

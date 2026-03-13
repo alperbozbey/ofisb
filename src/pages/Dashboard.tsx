@@ -22,20 +22,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-const yearlyData = [
-  { name: 'Oca', gelir: 45000, gider: 24000, kar: 21000 },
-  { name: 'Şub', gelir: 52000, gider: 28000, kar: 24000 },
-  { name: 'Mar', gelir: 48000, gider: 30000, kar: 18000 },
-  { name: 'Nis', gelir: 61000, gider: 32000, kar: 29000 },
-  { name: 'May', gelir: 59000, gider: 35000, kar: 24000 },
-  { name: 'Haz', gelir: 65000, gider: 38000, kar: 27000 },
-  { name: 'Tem', gelir: 72000, gider: 41000, kar: 31000 },
-  { name: 'Ağu', gelir: 68000, gider: 39000, kar: 29000 },
-  { name: 'Eyl', gelir: 75000, gider: 42000, kar: 33000 },
-  { name: 'Eki', gelir: 82000, gider: 45000, kar: 37000 },
-  { name: 'Kas', gelir: 88000, gider: 48000, kar: 40000 },
-  { name: 'Ara', gelir: 95000, gider: 52000, kar: 43000 },
-];
+const yearlyData: any[] = [];
 
 export default function Dashboard() {
   return (
@@ -56,8 +43,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard 
           title="Günlük Kasa" 
-          amount="₺4.250,00" 
-          trend="+15%" 
+          amount="₺0,00" 
+          trend="0%" 
           isPositive={true} 
           icon={Banknote} 
           color="text-emerald-600"
@@ -66,8 +53,8 @@ export default function Dashboard() {
         />
         <StatCard 
           title="Haftalık Kasa" 
-          amount="₺28.400,00" 
-          trend="+5%" 
+          amount="₺0,00" 
+          trend="0%" 
           isPositive={true} 
           icon={Wallet} 
           color="text-blue-600"
@@ -76,8 +63,8 @@ export default function Dashboard() {
         />
         <StatCard 
           title="Aylık Kasa" 
-          amount="₺124.500,00" 
-          trend="+12%" 
+          amount="₺0,00" 
+          trend="0%" 
           isPositive={true} 
           icon={TrendingUp} 
           color="text-indigo-600"
@@ -86,8 +73,8 @@ export default function Dashboard() {
         />
         <StatCard 
           title="Günlük Net Kar" 
-          amount="₺1.850,00" 
-          trend="+8%" 
+          amount="₺0,00" 
+          trend="0%" 
           isPositive={true} 
           icon={Activity} 
           color="text-emerald-600"
@@ -96,8 +83,8 @@ export default function Dashboard() {
         />
         <StatCard 
           title="Haftalık Net Kar" 
-          amount="₺12.200,00" 
-          trend="-2%" 
+          amount="₺0,00" 
+          trend="0%" 
           isPositive={false} 
           icon={TrendingDown} 
           color="text-red-600"
@@ -106,8 +93,8 @@ export default function Dashboard() {
         />
         <StatCard 
           title="Aylık Net Kar" 
-          amount="₺43.000,00" 
-          trend="+18%" 
+          amount="₺0,00" 
+          trend="0%" 
           isPositive={true} 
           icon={Activity} 
           color="text-indigo-600"
@@ -153,32 +140,7 @@ export default function Dashboard() {
           </div>
           
           <div className="space-y-4">
-            {[
-              { title: 'ABC Teknoloji A.Ş.', desc: 'Satış Faturası', amount: '+₺12.500', type: 'in' },
-              { title: 'Ofis Kırtasiye', desc: 'Gider Faturası', amount: '-₺850', type: 'out' },
-              { title: 'XYZ Yazılım', desc: 'Gelen Havale', amount: '+₺4.200', type: 'in' },
-              { title: 'Elektrik Faturası', desc: 'Banka Çıkışı', amount: '-₺1.150', type: 'out' },
-              { title: 'Maaş Ödemesi', desc: 'Banka Çıkışı', amount: '-₺24.000', type: 'out' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    item.type === 'in' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
-                  }`}>
-                    {item.type === 'in' ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                    <p className="text-xs text-slate-500">{item.desc}</p>
-                  </div>
-                </div>
-                <span className={`text-sm font-semibold ${
-                  item.type === 'in' ? 'text-emerald-600' : 'text-slate-900'
-                }`}>
-                  {item.amount}
-                </span>
-              </div>
-            ))}
+            {[]}
           </div>
         </div>
       </div>

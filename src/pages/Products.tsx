@@ -4,11 +4,11 @@ import { useAppContext } from '../context/AppContext';
 
 // Mock Data
 const initialCategories = [
-  { id: 1, name: 'Kırtasiye', parent: '-', count: 45 },
-  { id: 2, name: 'Elektronik', parent: '-', count: 12 },
-  { id: 3, name: 'Bilgisayar Bileşenleri', parent: 'Elektronik', count: 8 },
-  { id: 4, name: 'Sarf Malzeme', parent: '-', count: 24 },
-  { id: 5, name: 'Hizmet', parent: '-', count: 5 },
+  { id: 1, name: 'Kırtasiye', parent: '-', count: 0 },
+  { id: 2, name: 'Elektronik', parent: '-', count: 0 },
+  { id: 3, name: 'Bilgisayar Bileşenleri', parent: 'Elektronik', count: 0 },
+  { id: 4, name: 'Sarf Malzeme', parent: '-', count: 0 },
+  { id: 5, name: 'Hizmet', parent: '-', count: 0 },
 ];
 
 const mockAttributes = [

@@ -178,9 +178,16 @@ export default function Settings() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const [userToDelete, setUserToDelete] = useState<number | null>(null);
+
   const handleDeleteUser = (id: number) => {
-    if (window.confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) {
-      setUsers(users.filter(u => u.id !== id));
+    setUserToDelete(id);
+  };
+
+  const confirmDeleteUser = () => {
+    if (userToDelete !== null) {
+      setUsers(users.filter(u => u.id !== userToDelete));
+      setUserToDelete(null);
     }
   };
 
@@ -644,12 +651,21 @@ export default function Settings() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           {user.role !== 'Admin' && (
-                            <button 
-                              onClick={() => handleAddMonth(user.id)}
-                              className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors"
-                            >
-                              1 Ay Ekle
-                            </button>
+                            <div className="flex items-center justify-end gap-2">
+                              <button 
+                                onClick={() => handleAddMonth(user.id)}
+                                className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors"
+                              >
+                                1 Ay Ekle
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Aboneyi Sil"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -768,6 +784,34 @@ export default function Settings() {
       ) : (
         <div className="max-w-4xl">
           {renderSectionContent()}
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {userToDelete !== null && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-900">Kullanıcıyı Sil</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-slate-600">Bu kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
+            </div>
+            <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                onClick={() => setUserToDelete(null)}
+                className="px-4 py-2 text-slate-700 hover:bg-slate-200 bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+              >
+                İptal
+              </button>
+              <button
+                onClick={confirmDeleteUser}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                Sil
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
