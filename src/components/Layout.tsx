@@ -13,8 +13,10 @@ import {
   UserCircle,
   ShoppingCart,
   Package,
-  Wrench
+  Wrench,
+  LogOut
 } from 'lucide-react';
+import { useAppContext } from '../context/AppContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,6 +25,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
+  const { currentUser, setCurrentUser } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const navItems = [
@@ -86,10 +89,25 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
-            <Settings size={20} className="text-slate-400" />
-            {isSidebarOpen && <span>Ayarlar</span>}
+        <div className="p-4 border-t border-slate-800 space-y-2">
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+              activeTab === 'settings' 
+                ? 'bg-blue-600 text-white' 
+                : 'hover:bg-slate-800 hover:text-white text-slate-400'
+            }`}
+          >
+            <Settings size={20} className={activeTab === 'settings' ? 'text-white' : 'text-slate-400'} />
+            {isSidebarOpen && <span className={activeTab === 'settings' ? 'text-white' : ''}>Ayarlar</span>}
+          </button>
+          
+          <button 
+            onClick={() => setCurrentUser(null)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-slate-800 text-red-400 hover:text-red-300"
+          >
+            <LogOut size={20} />
+            {isSidebarOpen && <span>Çıkış Yap</span>}
           </button>
         </div>
       </aside>
@@ -117,7 +135,7 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
             <div className="h-8 w-px bg-slate-200"></div>
             <button className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900">
               <UserCircle size={24} className="text-slate-400" />
-              <span>Demo Kullanıcı</span>
+              <span>{currentUser?.name || 'Kullanıcı'}</span>
             </button>
           </div>
         </header>

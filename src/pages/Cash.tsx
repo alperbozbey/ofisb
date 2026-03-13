@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, Wallet, Building, CreditCard, MoreHorizontal, ArrowRightLeft } from 'lucide-react';
-
-const accounts = [
-  { id: 1, name: 'Merkez Kasa', type: 'cash', currency: 'TRY', balance: '₺12.450,00', bank: null, branch: null, iban: null },
-  { id: 2, name: 'Garanti BBVA Ticari', type: 'bank', currency: 'TRY', balance: '₺45.200,00', bank: 'Garanti BBVA', branch: 'Kadıköy', iban: 'TR12 0006 2000 0001 2345 6789 01' },
-  { id: 3, name: 'Ziraat Bankası USD', type: 'bank', currency: 'USD', balance: '$4.250,00', bank: 'Ziraat Bankası', branch: 'Beşiktaş', iban: 'TR34 0001 0000 0009 8765 4321 02' },
-  { id: 4, name: 'Şirket Kredi Kartı', type: 'credit', currency: 'TRY', balance: '-₺15.300,00', bank: 'Yapı Kredi', branch: null, iban: '**** **** **** 4567' },
-];
+import { useAppContext } from '../context/AppContext';
 
 export default function Cash() {
+  const { accounts } = useAppContext();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -76,9 +72,10 @@ export default function Cash() {
             <div className={`pt-4 border-t border-slate-100 flex items-center justify-between ${account.type === 'cash' ? 'mt-12' : ''}`}>
               <span className="text-sm text-slate-500">Güncel Bakiye</span>
               <span className={`text-2xl font-bold ${
-                account.balance.startsWith('-') ? 'text-red-600' : 'text-slate-900'
+                account.balance < 0 ? 'text-red-600' : 'text-slate-900'
               }`}>
-                {account.balance}
+                {account.currency === 'TRY' ? '₺' : account.currency === 'USD' ? '$' : '€'}
+                {Math.abs(account.balance).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
               </span>
             </div>
           </div>

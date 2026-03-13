@@ -1,32 +1,42 @@
 import React, { useState } from 'react';
-import { Plus, Filter, Download, MoreHorizontal, CheckCircle2, AlertCircle, Clock, X, Trash2 } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
-
-type InvoiceType = 'sale' | 'purchase';
-
-type Invoice = {
-  id: string;
-  type: InvoiceType;
-  customer: string;
-  date: string;
-  dueDate: string;
-  amount: string;
-  status: string;
-};
-
-const initialInvoices: Invoice[] = [
-  { id: 'INV-2024-001', type: 'sale', customer: 'ABC Teknoloji A.Ş.', date: '12 Eki 2024', dueDate: '12 Kas 2024', amount: '₺12.500,00', status: 'paid' },
-  { id: 'INV-2024-002', type: 'sale', customer: 'XYZ Yazılım Ltd.', date: '15 Eki 2024', dueDate: '15 Kas 2024', amount: '₺4.200,00', status: 'pending' },
-  { id: 'INV-2024-003', type: 'sale', customer: 'Ofis Kırtasiye', date: '01 Eyl 2024', dueDate: '01 Eki 2024', amount: '₺850,00', status: 'overdue' },
-  { id: 'INV-2024-004', type: 'sale', customer: 'Global Lojistik', date: '20 Eki 2024', dueDate: '20 Kas 2024', amount: '₺28.400,00', status: 'pending' },
-  { id: 'INV-2024-005', type: 'sale', customer: 'Mega Market', date: '05 Eki 2024', dueDate: '05 Kas 2024', amount: '₺3.150,00', status: 'paid' },
-];
+import { Plus, Filter, Download, MoreHorizontal, CheckCircle2, AlertCircle, Clock, X, Trash2, Edit } from 'lucide-react';
+import { useAppContext, Invoice } from '../context/AppContext';
 
 export default function Invoices() {
-  const { products, updateProductStockAndPrice } = useAppContext();
-  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+  const { products, updateProductStockAndPrice, invoices, setInvoices } = useAppContext();
   const [activeTab, setActiveTab] = useState('all');
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
+
+  const openEditModal = (invoice: Invoice) => {
+    setEditingInvoice(invoice);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateInvoice = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingInvoice) {
+      setInvoices(invoices.map(inv => inv.id === editingInvoice.id ? editingInvoice : inv));
+      setIsEditModalOpen(false);
+      setEditingInvoice(null);
+    }
+  };
+
+  const confirmDelete = (id: string) => {
+    setInvoiceToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDelete = () => {
+    if (invoiceToDelete) {
+      setInvoices(invoices.filter(inv => inv.id !== invoiceToDelete));
+      setIsDeleteModalOpen(false);
+      setInvoiceToDelete(null);
+    }
+  };
 
   const [newPurchase, setNewPurchase] = useState({
     supplier: '',
@@ -234,9 +244,22 @@ export default function Invoices() {
                     <StatusBadge status={invoice.status} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-md transition-colors opacity-0 group-hover:opacity-100">
-                      <MoreHorizontal size={18} />
-                    </button>
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => openEditModal(invoice)}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                        title="Düzenle"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button 
+                        onClick={() => confirmDelete(invoice.id)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                        title="Sil"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -261,6 +284,129 @@ export default function Invoices() {
           </div>
         </div>
       </div>
+
+      {/* Edit Invoice Modal */}
+      {isEditModalOpen && editingInvoice && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-900">Fatura Düzenle</h2>
+              <button 
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateInvoice} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Cari / Tedarikçi</label>
+                <input 
+                  type="text" 
+                  required
+                  value={editingInvoice.customer}
+                  onChange={(e) => setEditingInvoice({...editingInvoice, customer: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Tarih</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editingInvoice.date}
+                    onChange={(e) => setEditingInvoice({...editingInvoice, date: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Vade</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editingInvoice.dueDate}
+                    onChange={(e) => setEditingInvoice({...editingInvoice, dueDate: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Tutar</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editingInvoice.amount}
+                    onChange={(e) => setEditingInvoice({...editingInvoice, amount: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Durum</label>
+                  <select 
+                    value={editingInvoice.status}
+                    onChange={(e) => setEditingInvoice({...editingInvoice, status: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                  >
+                    <option value="paid">Ödendi</option>
+                    <option value="pending">Bekliyor</option>
+                    <option value="overdue">Gecikti</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-slate-200">
+                <button 
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  İptal
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Güncelle
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm flex flex-col overflow-hidden">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle size={32} />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Faturayı Sil</h2>
+              <p className="text-sm text-slate-500">
+                Bu faturayı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+              </p>
+            </div>
+            <div className="flex border-t border-slate-200">
+              <button 
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="flex-1 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors border-r border-slate-200"
+              >
+                İptal
+              </button>
+              <button 
+                onClick={handleDelete}
+                className="flex-1 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Evet, Sil
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Purchase Invoice Modal */}
       {isPurchaseModalOpen && (

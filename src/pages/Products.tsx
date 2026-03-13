@@ -11,13 +11,6 @@ const initialCategories = [
   { id: 5, name: 'Hizmet', parent: '-', count: 5 },
 ];
 
-const initialBrands = [
-  { id: 1, name: 'Apple', models: ['iPhone 11', 'iPhone 12', 'iPhone 13', 'iPhone 14', 'iPhone 15'] },
-  { id: 2, name: 'Samsung', models: ['Galaxy S21', 'Galaxy S22', 'Galaxy S23', 'Galaxy A54'] },
-  { id: 3, name: 'Logitech', models: ['M185', 'MX Master 3', 'G Pro X'] },
-  { id: 4, name: 'SanDisk', models: ['Cruzer Blade', 'Ultra Flair', 'Extreme Pro'] },
-];
-
 const mockAttributes = [
   { id: 1, name: 'Renk', type: 'color', values: [
     { label: 'Siyah', hex: '#1e293b' }, 
@@ -31,12 +24,12 @@ const mockAttributes = [
 ];
 
 export default function Products() {
-  const { products, setProducts } = useAppContext();
+  const { products, setProducts, brands, setBrands } = useAppContext();
   const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'attributes' | 'brands'>('products');
   const [searchTerm, setSearchTerm] = useState('');
   const [categories, setCategories] = useState(initialCategories);
-  const [brands, setBrands] = useState(initialBrands);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [isAddBrandModalOpen, setIsAddBrandModalOpen] = useState(false);
   const [isAddModelModalOpen, setIsAddModelModalOpen] = useState<number | null>(null);
@@ -62,23 +55,67 @@ export default function Products() {
 
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    const productToAdd = {
-      id: products.length + 1,
-      name: newProduct.name,
-      sku: newProduct.sku,
-      category: newProduct.category,
-      price: parseFloat(newProduct.price) || 0,
-      purchasePrice: parseFloat(newProduct.purchasePrice) || 0,
-      stock: newProduct.stock === '' ? null : parseInt(newProduct.stock, 10),
-      status: newProduct.status,
-      manufacturerBrand: newProduct.manufacturerBrand || '-',
-      manufacturerModel: newProduct.manufacturerModel || '-',
-      compatibleBrand: newProduct.compatibleBrand || '-',
-      compatibleModel: newProduct.compatibleModel || '-'
-    };
-    setProducts([...products, productToAdd]);
+    if (editingProductId !== null) {
+      setProducts(products.map(p => p.id === editingProductId ? {
+        ...p,
+        name: newProduct.name,
+        sku: newProduct.sku,
+        category: newProduct.category,
+        price: parseFloat(newProduct.price) || 0,
+        purchasePrice: parseFloat(newProduct.purchasePrice) || 0,
+        stock: newProduct.stock === '' ? null : parseInt(newProduct.stock, 10),
+        status: newProduct.status,
+        manufacturerBrand: newProduct.manufacturerBrand || '-',
+        manufacturerModel: newProduct.manufacturerModel || '-',
+        compatibleBrand: newProduct.compatibleBrand || '-',
+        compatibleModel: newProduct.compatibleModel || '-'
+      } : p));
+    } else {
+      const productToAdd = {
+        id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
+        name: newProduct.name,
+        sku: newProduct.sku,
+        category: newProduct.category,
+        price: parseFloat(newProduct.price) || 0,
+        purchasePrice: parseFloat(newProduct.purchasePrice) || 0,
+        stock: newProduct.stock === '' ? null : parseInt(newProduct.stock, 10),
+        status: newProduct.status,
+        manufacturerBrand: newProduct.manufacturerBrand || '-',
+        manufacturerModel: newProduct.manufacturerModel || '-',
+        compatibleBrand: newProduct.compatibleBrand || '-',
+        compatibleModel: newProduct.compatibleModel || '-'
+      };
+      setProducts([...products, productToAdd]);
+    }
+    closeProductModal();
+  };
+
+  const closeProductModal = () => {
     setIsAddModalOpen(false);
+    setEditingProductId(null);
     setNewProduct({ name: '', sku: '', category: 'Kırtasiye', price: '', purchasePrice: '', stock: '', status: 'Aktif', manufacturerBrand: '', manufacturerModel: '', compatibleBrand: '', compatibleModel: '' });
+  };
+
+  const handleEditProduct = (product: any) => {
+    setEditingProductId(product.id);
+    setNewProduct({
+      name: product.name,
+      sku: product.sku,
+      category: product.category,
+      price: product.price.toString(),
+      purchasePrice: product.purchasePrice.toString(),
+      stock: product.stock === null ? '' : product.stock.toString(),
+      status: product.status,
+      manufacturerBrand: product.manufacturerBrand === '-' ? '' : product.manufacturerBrand,
+      manufacturerModel: product.manufacturerModel === '-' ? '' : product.manufacturerModel,
+      compatibleBrand: product.compatibleBrand === '-' ? '' : product.compatibleBrand,
+      compatibleModel: product.compatibleModel === '-' ? '' : product.compatibleModel
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const handleDeleteProduct = (id: number) => {
+    setProducts(products.filter(p => p.id !== id));
   };
 
   const handleAddCategory = (e: React.FormEvent) => {
@@ -182,10 +219,18 @@ export default function Products() {
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <button className="p-1 text-slate-400 hover:text-blue-600 transition-colors">
+                    <button 
+                      onClick={() => handleEditProduct(product)}
+                      className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
+                      title="Düzenle"
+                    >
                       <Edit size={16} />
                     </button>
-                    <button className="p-1 text-slate-400 hover:text-red-600 transition-colors">
+                    <button 
+                      onClick={() => handleDeleteProduct(product.id)}
+                      className="p-1 text-slate-400 hover:text-red-600 transition-colors"
+                      title="Sil"
+                    >
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -359,7 +404,11 @@ export default function Products() {
           </button>
           <button 
             onClick={() => {
-              if (activeTab === 'products') setIsAddModalOpen(true);
+              if (activeTab === 'products') {
+                setEditingProductId(null);
+                setNewProduct({ name: '', sku: '', category: 'Kırtasiye', price: '', purchasePrice: '', stock: '', status: 'Aktif', manufacturerBrand: '', manufacturerModel: '', compatibleBrand: '', compatibleModel: '' });
+                setIsAddModalOpen(true);
+              }
               if (activeTab === 'categories') setIsAddCategoryModalOpen(true);
               if (activeTab === 'brands') setIsAddBrandModalOpen(true);
             }}
@@ -448,9 +497,11 @@ export default function Products() {
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900">Yeni Ürün Ekle</h3>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {editingProductId ? 'Ürünü Düzenle' : 'Yeni Ürün Ekle'}
+              </h3>
               <button 
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={closeProductModal}
                 className="text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X size={20} />
@@ -599,7 +650,7 @@ export default function Products() {
               <div className="pt-4 flex justify-end gap-2">
                 <button 
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={closeProductModal}
                   className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   İptal
@@ -608,7 +659,7 @@ export default function Products() {
                   type="submit"
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Ürünü Kaydet
+                  {editingProductId ? 'Değişiklikleri Kaydet' : 'Ürünü Kaydet'}
                 </button>
               </div>
             </form>
