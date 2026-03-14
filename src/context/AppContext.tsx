@@ -235,51 +235,55 @@ const initialSecuritySettings: SecuritySettings = {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [brands, setBrands] = useState<Brand[]>(initialBrands);
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
-  const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
-  const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
-  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
-  const [companySettings, setCompanySettings] = useState<CompanySettings>(initialCompanySettings);
-  const [users, setUsers] = useState<UserRole[]>(() => {
-    const saved = localStorage.getItem('ofisb_users');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+function useLocalStorageState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.warn(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
     }
-    return initialUsers;
-  });
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(initialNotificationSettings);
-  const [securitySettings, setSecuritySettings] = useState<SecuritySettings>(initialSecuritySettings);
-  const [currentUser, setCurrentUser] = useState<UserRole | null>(() => {
-    const saved = localStorage.getItem('ofisb_currentUser');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return null;
   });
 
   React.useEffect(() => {
-    localStorage.setItem('ofisb_users', JSON.stringify(users));
-    
+    try {
+      if (state === null || state === undefined) {
+        window.localStorage.removeItem(key);
+      } else {
+        window.localStorage.setItem(key, JSON.stringify(state));
+      }
+    } catch (error) {
+      console.warn(`Error setting localStorage key "${key}":`, error);
+    }
+  }, [key, state]);
+
+  return [state, setState];
+}
+
+export const AppProvider = ({ children }: { children: ReactNode }) => {
+  const [products, setProducts] = useLocalStorageState<Product[]>('ofisb_products', initialProducts);
+  const [brands, setBrands] = useLocalStorageState<Brand[]>('ofisb_brands', initialBrands);
+  const [customers, setCustomers] = useLocalStorageState<Customer[]>('ofisb_customers', initialCustomers);
+  const [tickets, setTickets] = useLocalStorageState<Ticket[]>('ofisb_tickets', initialTickets);
+  const [accounts, setAccounts] = useLocalStorageState<Account[]>('ofisb_accounts', initialAccounts);
+  const [invoices, setInvoices] = useLocalStorageState<Invoice[]>('ofisb_invoices', initialInvoices);
+  const [companySettings, setCompanySettings] = useLocalStorageState<CompanySettings>('ofisb_companySettings', initialCompanySettings);
+  const [users, setUsers] = useLocalStorageState<UserRole[]>('ofisb_users', initialUsers);
+  const [notificationSettings, setNotificationSettings] = useLocalStorageState<NotificationSettings>('ofisb_notificationSettings', initialNotificationSettings);
+  const [securitySettings, setSecuritySettings] = useLocalStorageState<SecuritySettings>('ofisb_securitySettings', initialSecuritySettings);
+  const [currentUser, setCurrentUser] = useLocalStorageState<UserRole | null>('ofisb_currentUser', null);
+  const [adminPaymentSettings, setAdminPaymentSettings] = useLocalStorageState<AdminPaymentSettings>('ofisb_adminPaymentSettings', initialAdminPaymentSettings);
+  const [subscriptionPackages, setSubscriptionPackages] = useLocalStorageState<SubscriptionPackage[]>('ofisb_subscriptionPackages', initialSubscriptionPackages);
+
+  React.useEffect(() => {
     if (currentUser) {
       const updatedUser = users.find(u => u.id === currentUser.id);
       if (updatedUser && JSON.stringify(updatedUser) !== JSON.stringify(currentUser)) {
         setCurrentUser(updatedUser);
       }
     }
-  }, [users, currentUser]);
-
-  React.useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('ofisb_currentUser', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('ofisb_currentUser');
-    }
-  }, [currentUser]);
-  const [adminPaymentSettings, setAdminPaymentSettings] = useState<AdminPaymentSettings>(initialAdminPaymentSettings);
-  const [subscriptionPackages, setSubscriptionPackages] = useState<SubscriptionPackage[]>(initialSubscriptionPackages);
+  }, [users, currentUser, setCurrentUser]);
 
   const addIncomeToAccount = (accountId: number, amount: number) => {
     setAccounts(prev => prev.map(acc => 

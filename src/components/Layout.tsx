@@ -40,6 +40,10 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
     { id: 'reports', label: 'Raporlar', icon: BarChart3 },
   ];
 
+  if (currentUser?.role === 'Admin') {
+    navItems.push({ id: 'subscription_management', label: 'Abone Yönetimi', icon: Users });
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
       {/* Sidebar */}

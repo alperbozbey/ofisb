@@ -15,6 +15,7 @@ import QuickSale from './pages/QuickSale';
 import Products from './pages/Products';
 import TechnicalService from './pages/TechnicalService';
 import Settings from './pages/Settings';
+import SubscriptionManagement from './pages/SubscriptionManagement';
 import LandingPage from './pages/LandingPage';
 import PaymentPage from './pages/PaymentPage';
 import { useAppContext } from './context/AppContext';
@@ -56,6 +57,8 @@ export default function App() {
         return <TechnicalService />;
       case 'settings':
         return <Settings />;
+      case 'subscription_management':
+        return <SubscriptionManagement />;
       default:
         return (
           <div className="flex flex-col items-center justify-center h-full text-slate-500">
