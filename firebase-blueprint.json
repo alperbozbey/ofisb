@@ -1,0 +1,193 @@
+{
+  "entities": {
+    "AdminPaymentSettings": {
+      "title": "AdminPaymentSettings",
+      "description": "Global payment settings for subscriptions",
+      "type": "object",
+      "properties": {
+        "iban": { "type": "string" },
+        "bankName": { "type": "string" },
+        "accountHolder": { "type": "string" },
+        "monthlyPrice": { "type": "number" },
+        "notes": { "type": "string" }
+      }
+    },
+    "SubscriptionPackage": {
+      "title": "SubscriptionPackage",
+      "description": "Available subscription packages",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "durationMonths": { "type": "number" },
+        "features": { "type": "array", "items": { "type": "string" } },
+        "isActive": { "type": "boolean" }
+      }
+    },
+    "UserRole": {
+      "title": "UserRole",
+      "description": "User account details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "status": { "type": "string" },
+        "subscriptionEndDate": { "type": "string" },
+        "subscriptionPackageId": { "type": "string" }
+      }
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Tenant specific product",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "sku": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "purchasePrice": { "type": "number" },
+        "stock": { "type": "number" },
+        "status": { "type": "string" },
+        "manufacturerBrand": { "type": "string" },
+        "manufacturerModel": { "type": "string" },
+        "compatibleBrand": { "type": "string" },
+        "compatibleModel": { "type": "string" }
+      }
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Tenant specific customer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "group": { "type": "string" },
+        "contact": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "balance": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Tenant specific invoice",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "customer": { "type": "string" },
+        "date": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "amount": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "Tenant specific technical service ticket",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customer": { "type": "string" },
+        "device": { "type": "string" },
+        "deviceType": { "type": "string" },
+        "issue": { "type": "string" },
+        "status": { "type": "string" },
+        "date": { "type": "string" },
+        "price": { "type": "string" },
+        "laborCost": { "type": "number" },
+        "netProfit": { "type": "number" },
+        "partsCost": { "type": "number" },
+        "isPaid": { "type": "boolean" }
+      }
+    },
+    "Account": {
+      "title": "Account",
+      "description": "Tenant specific financial account",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "currency": { "type": "string" },
+        "balance": { "type": "number" },
+        "bank": { "type": "string" },
+        "branch": { "type": "string" },
+        "iban": { "type": "string" }
+      }
+    },
+    "Brand": {
+      "title": "Brand",
+      "description": "Tenant specific brand",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "models": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "CompanySettings": {
+      "title": "CompanySettings",
+      "description": "Tenant specific company settings",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "currency": { "type": "string" },
+        "taxRate": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "/adminSettings/{settingId}": {
+      "schema": "AdminPaymentSettings",
+      "description": "Global settings like payment info"
+    },
+    "/subscriptionPackages/{packageId}": {
+      "schema": "SubscriptionPackage",
+      "description": "Global subscription packages"
+    },
+    "/users/{userId}": {
+      "schema": "UserRole",
+      "description": "User accounts"
+    },
+    "/users/{userId}/products/{productId}": {
+      "schema": "Product",
+      "description": "Tenant products"
+    },
+    "/users/{userId}/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Tenant customers"
+    },
+    "/users/{userId}/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Tenant invoices"
+    },
+    "/users/{userId}/tickets/{ticketId}": {
+      "schema": "Ticket",
+      "description": "Tenant tickets"
+    },
+    "/users/{userId}/accounts/{accountId}": {
+      "schema": "Account",
+      "description": "Tenant accounts"
+    },
+    "/users/{userId}/brands/{brandId}": {
+      "schema": "Brand",
+      "description": "Tenant brands"
+    },
+    "/users/{userId}/companySettings/settings": {
+      "schema": "CompanySettings",
+      "description": "Tenant company settings"
+    }
+  }
+}

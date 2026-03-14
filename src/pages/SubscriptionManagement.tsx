@@ -1,37 +1,68 @@
 import React, { useState } from 'react';
 import { Users, Trash2, Shield, AlertCircle } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export default function SubscriptionManagement() {
-  const { users, setUsers, subscriptionPackages } = useAppContext();
+  const { users, subscriptionPackages } = useAppContext();
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
 
   const handleDeleteUser = (id: number) => {
     setUserToDelete(id);
   };
 
-  const confirmDeleteUser = () => {
+  const confirmDeleteUser = async () => {
     if (userToDelete !== null) {
-      setUsers(users.filter(u => u.id !== userToDelete));
+      const user = users.find(u => u.id === userToDelete) as any;
+      if (user && user.uid) {
+        try {
+          await deleteDoc(doc(db, 'users', user.uid));
+        } catch (error) {
+          console.error('Error deleting user:', error);
+          alert('Kullanıcı silinirken bir hata oluştu.');
+        }
+      }
       setUserToDelete(null);
     }
   };
 
-  const handleAddMonth = (userId: number) => {
-    setUsers(users.map(u => {
-      if (u.id === userId) {
-        const pkg = subscriptionPackages.find(p => p.id === u.subscriptionPackageId);
-        const monthsToAdd = pkg ? pkg.durationMonths : 1;
-        
-        const currentEnd = u.subscriptionEndDate ? new Date(u.subscriptionEndDate) : new Date();
-        const now = new Date();
-        const baseDate = currentEnd > now ? currentEnd : now;
-        const newEnd = new Date(baseDate.getTime() + monthsToAdd * 30 * 24 * 60 * 60 * 1000);
-        return { ...u, subscriptionEndDate: newEnd.toISOString().split('T')[0] };
-      }
-      return u;
-    }));
-    alert('Kullanıcının abonelik süresi uzatıldı.');
+  const handleAddMonth = async (userId: number) => {
+    const user = users.find(u => u.id === userId) as any;
+    if (!user || !user.uid) return;
+
+    const pkg = subscriptionPackages.find(p => p.id === user.subscriptionPackageId);
+    const monthsToAdd = pkg ? pkg.durationMonths : 1;
+    
+    const currentEnd = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : new Date();
+    const now = new Date();
+    const baseDate = currentEnd > now ? currentEnd : now;
+    const newEnd = new Date(baseDate.getTime() + monthsToAdd * 30 * 24 * 60 * 60 * 1000);
+    const newEndDateStr = newEnd.toISOString().split('T')[0];
+
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        subscriptionEndDate: newEndDateStr
+      });
+      alert('Kullanıcının abonelik süresi uzatıldı.');
+    } catch (error) {
+      console.error('Error updating subscription:', error);
+      alert('Abonelik güncellenirken bir hata oluştu.');
+    }
+  };
+
+  const handlePackageChange = async (userId: number, packageId: string) => {
+    const user = users.find(u => u.id === userId) as any;
+    if (!user || !user.uid) return;
+
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        subscriptionPackageId: packageId || null
+      });
+    } catch (error) {
+      console.error('Error updating package:', error);
+      alert('Paket güncellenirken bir hata oluştu.');
+    }
   };
 
   return (
@@ -86,9 +117,7 @@ export default function SubscriptionManagement() {
                       ) : (
                         <select 
                           value={user.subscriptionPackageId || ''}
-                          onChange={(e) => {
-                            setUsers(users.map(u => u.id === user.id ? { ...u, subscriptionPackageId: e.target.value || undefined } : u));
-                          }}
+                          onChange={(e) => handlePackageChange(user.id, e.target.value)}
                           className="px-2 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none w-full max-w-[150px]"
                         >
                           <option value="">Deneme Sürümü</option>

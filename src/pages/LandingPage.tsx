@@ -5,6 +5,8 @@ import {
   Wallet, Shield, Zap, ChevronRight, Menu, X, 
   FileText, Box, Calculator, ArrowRight
 } from 'lucide-react';
+import { auth, googleProvider } from '../firebase';
+import { signInWithPopup } from 'firebase/auth';
 
 export default function LandingPage() {
   const { users, setUsers, setCurrentUser } = useAppContext();
@@ -12,13 +14,6 @@ export default function LandingPage() {
   // UI States
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
-  
-  // Form States
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
 
   // Scroll effect for navbar
@@ -30,57 +25,40 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const user = users.find(u => u.username === username && u.password === password);
-    if (user) {
-      setCurrentUser(user);
-    } else {
-      setError('Hatalı kullanıcı adı veya şifre.');
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      // Check if user exists in our local users array (or Firestore later)
+      const existingUser = users.find(u => u.email === user.email);
+      
+      if (existingUser) {
+        setCurrentUser(existingUser);
+      } else {
+        // Create new user
+        const newUser = {
+          id: Math.max(...users.map(u => u.id), 0) + 1,
+          username: user.email?.split('@')[0] || 'user',
+          name: user.displayName || 'Yeni Kullanıcı',
+          email: user.email || '',
+          role: user.email === 'alper.bozbey@gmail.com' ? 'Admin' : 'Kullanıcı' as const,
+          status: 'Aktif' as const,
+          subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        };
+        
+        // Save to Firestore
+        const { doc, setDoc } = await import('firebase/firestore');
+        const { db } = await import('../firebase');
+        await setDoc(doc(db, 'users', user.uid), newUser);
+        
+        // Local state update is handled by onSnapshot in AppContext
+        setCurrentUser(newUser);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError('Giriş yapılırken bir hata oluştu: ' + err.message);
     }
-  };
-
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username || !password || !email || !name) {
-      setError('Lütfen tüm alanları doldurun.');
-      return;
-    }
-    
-    if (users.some(u => u.username === username)) {
-      setError('Bu kullanıcı adı zaten alınmış.');
-      return;
-    }
-
-    const newUser = {
-      id: Math.max(...users.map(u => u.id), 0) + 1,
-      username,
-      password,
-      name,
-      email,
-      role: 'Kullanıcı' as const,
-      status: 'Aktif' as const,
-      subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    };
-    
-    setUsers([...users, newUser]);
-    setAuthModal('login');
-    setError('');
-    alert('Hesabınız oluşturuldu. 1 aylık ücretsiz deneme süreniz başladı. Lütfen giriş yapın.');
-  };
-
-  const resetForms = () => {
-    setUsername('');
-    setPassword('');
-    setEmail('');
-    setName('');
-    setError('');
-  };
-
-  const openModal = (type: 'login' | 'register') => {
-    resetForms();
-    setAuthModal(type);
-    setMobileMenuOpen(false);
   };
 
   return (
@@ -102,11 +80,8 @@ export default function LandingPage() {
               <a href="#nasil-calisir" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Nasıl Çalışır?</a>
               <a href="#seo-icerik" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Neden Biz?</a>
               <div className="flex items-center gap-4 ml-4">
-                <button onClick={() => openModal('login')} className="text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors">
-                  Giriş Yap
-                </button>
-                <button onClick={() => openModal('register')} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20">
-                  Ücretsiz Dene
+                <button onClick={handleGoogleLogin} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20">
+                  Google ile Giriş Yap
                 </button>
               </div>
             </nav>
@@ -125,8 +100,7 @@ export default function LandingPage() {
             <a href="#nasil-calisir" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">Nasıl Çalışır?</a>
             <a href="#seo-icerik" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">Neden Biz?</a>
             <div className="h-px bg-slate-100 my-2"></div>
-            <button onClick={() => openModal('login')} className="w-full text-left px-4 py-2 text-slate-700 font-medium hover:bg-slate-50 rounded-lg">Giriş Yap</button>
-            <button onClick={() => openModal('register')} className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium text-center">Ücretsiz Dene</button>
+            <button onClick={handleGoogleLogin} className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium text-center">Google ile Giriş Yap</button>
           </div>
         )}
       </header>
@@ -145,12 +119,10 @@ export default function LandingPage() {
             <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">
               Fatura kesme, stok takibi, cari hesap yönetimi ve teknik servis süreçlerinizi tek bir bulut tabanlı platformdan yönetin. KOBİ'ler için özel olarak tasarlandı.
             </p>
+            {error && <p className="text-red-500 mb-4">{error}</p>}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button onClick={() => openModal('register')} className="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white rounded-xl text-lg font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2">
+              <button onClick={handleGoogleLogin} className="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white rounded-xl text-lg font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2">
                 Hemen Ücretsiz Başla <ArrowRight size={20} />
-              </button>
-              <button onClick={() => openModal('login')} className="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-xl text-lg font-medium hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
-                Zaten hesabım var
               </button>
             </div>
             <p className="mt-6 text-sm text-slate-500 flex items-center justify-center gap-2">
@@ -230,7 +202,7 @@ export default function LandingPage() {
             <p className="text-blue-100 text-lg mb-10 max-w-2xl mx-auto">
               Kurulum gerektirmeyen, kullanımı kolay ve güvenli ön muhasebe programımızı 30 gün boyunca ücretsiz deneyin.
             </p>
-            <button onClick={() => openModal('register')} className="px-8 py-4 bg-white text-blue-600 rounded-xl text-lg font-bold hover:bg-slate-50 transition-all shadow-lg hover:scale-105">
+            <button onClick={handleGoogleLogin} className="px-8 py-4 bg-white text-blue-600 rounded-xl text-lg font-bold hover:bg-slate-50 transition-all shadow-lg hover:scale-105">
               Hemen Ücretsiz Hesap Oluştur
             </button>
           </div>
@@ -280,99 +252,6 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-
-      {/* Auth Modals */}
-      {authModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="flex justify-between items-center p-6 border-b border-slate-100">
-              <h3 className="text-xl font-bold text-slate-900">
-                {authModal === 'login' ? 'Giriş Yap' : 'Ücretsiz Kayıt Ol'}
-              </h3>
-              <button onClick={() => setAuthModal(null)} className="text-slate-400 hover:text-slate-600 transition-colors">
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div className="p-6">
-              {error && (
-                <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg text-sm font-medium flex items-start gap-2">
-                  <Shield size={18} className="shrink-0 mt-0.5" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <form onSubmit={authModal === 'login' ? handleLogin : handleRegister} className="space-y-4">
-                {authModal === 'register' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Ad Soyad / Firma Adı</label>
-                      <input 
-                        type="text" 
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Örn: Ahmet Yılmaz"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">E-posta Adresi</label>
-                      <input 
-                        type="email" 
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="ornek@sirket.com"
-                      />
-                    </div>
-                  </>
-                )}
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Kullanıcı Adı</label>
-                  <input 
-                    type="text" 
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Kullanıcı adınız"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Şifre</label>
-                  <input 
-                    type="password" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="••••••••"
-                  />
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 mt-6"
-                >
-                  {authModal === 'login' ? (
-                    <><Lock size={18} /> Sisteme Giriş Yap</>
-                  ) : (
-                    <><Zap size={18} /> Hesabımı Oluştur</>
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-6 text-center text-sm text-slate-500">
-                {authModal === 'login' ? (
-                  <>Hesabınız yok mu? <button onClick={() => openModal('register')} className="text-blue-600 font-medium hover:underline">Ücretsiz Kayıt Olun</button></>
-                ) : (
-                  <>Zaten hesabınız var mı? <button onClick={() => openModal('login')} className="text-blue-600 font-medium hover:underline">Giriş Yapın</button></>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

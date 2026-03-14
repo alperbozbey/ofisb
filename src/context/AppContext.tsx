@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { db, auth } from '../firebase';
+import { doc, getDoc, setDoc, collection, onSnapshot, query, getDocs } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export type Account = {
   id: number;
@@ -258,6 +261,21 @@ function useLocalStorageState<T>(key: string, initialValue: T): [T, React.Dispat
     }
   }, [key, state]);
 
+  React.useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === key && e.newValue !== null) {
+        try {
+          setState(JSON.parse(e.newValue));
+        } catch (error) {
+          console.warn(`Error parsing storage change for key "${key}":`, error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [key]);
+
   return [state, setState];
 }
 
@@ -275,6 +293,95 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useLocalStorageState<UserRole | null>('ofisb_currentUser', null);
   const [adminPaymentSettings, setAdminPaymentSettings] = useLocalStorageState<AdminPaymentSettings>('ofisb_adminPaymentSettings', initialAdminPaymentSettings);
   const [subscriptionPackages, setSubscriptionPackages] = useLocalStorageState<SubscriptionPackage[]>('ofisb_subscriptionPackages', initialSubscriptionPackages);
+  const [firebaseUser, setFirebaseUser] = useState<any>(null);
+
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Firestore Sync for Admin Settings and Users
+  React.useEffect(() => {
+    if (!firebaseUser) return;
+    
+    const unsubPayment = onSnapshot(doc(db, 'adminSettings', 'payment'), (docSnap) => {
+      if (docSnap.exists()) {
+        setAdminPaymentSettings(docSnap.data() as AdminPaymentSettings);
+      }
+    });
+
+    const unsubPackages = onSnapshot(collection(db, 'subscriptionPackages'), (snapshot) => {
+      const packages: SubscriptionPackage[] = [];
+      snapshot.forEach((doc) => {
+        packages.push({ id: doc.id, ...doc.data() } as SubscriptionPackage);
+      });
+      if (packages.length > 0) {
+        setSubscriptionPackages(packages);
+      }
+    });
+
+    let unsubUsers1 = () => {};
+    let unsubUsers2 = () => {};
+
+    // Try to fetch all users (will only succeed for Admin)
+    try {
+      unsubUsers1 = onSnapshot(collection(db, 'users'), (snapshot) => {
+        const fetchedUsers: UserRole[] = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          fetchedUsers.push({ ...data, uid: doc.id } as UserRole & { uid: string });
+        });
+        if (fetchedUsers.length > 0) {
+          setUsers(fetchedUsers);
+        }
+      }, (error) => {
+        // If permission denied (not admin), just fetch current user
+        if (error.code === 'permission-denied') {
+          unsubUsers2 = onSnapshot(doc(db, 'users', firebaseUser.uid), (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              const user = { ...data, uid: docSnap.id } as UserRole & { uid: string };
+              setCurrentUser(user);
+              // Also update the users array with just this user so it's not empty
+              setUsers([user]);
+            }
+          });
+        }
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
+    return () => {
+      unsubPayment();
+      unsubPackages();
+      unsubUsers1();
+      unsubUsers2();
+    };
+  }, [firebaseUser]);
+
+  // Debounced save for adminPaymentSettings
+  React.useEffect(() => {
+    if (!firebaseUser) return;
+    const timer = setTimeout(() => {
+      setDoc(doc(db, 'adminSettings', 'payment'), adminPaymentSettings).catch(console.error);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [adminPaymentSettings, firebaseUser]);
+
+  // Debounced save for subscriptionPackages
+  React.useEffect(() => {
+    if (!firebaseUser) return;
+    const timer = setTimeout(() => {
+      subscriptionPackages.forEach(pkg => {
+        const { id, ...data } = pkg;
+        setDoc(doc(db, 'subscriptionPackages', id), data).catch(console.error);
+      });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [subscriptionPackages, firebaseUser]);
 
   React.useEffect(() => {
     if (currentUser) {
