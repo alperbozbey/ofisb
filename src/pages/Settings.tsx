@@ -16,6 +16,7 @@ export default function Settings() {
   } = useAppContext();
 
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [showPaymentInfo, setShowPaymentInfo] = useState(false);
   
   // New User Modal State
   const [showNewUserModal, setShowNewUserModal] = useState(false);
@@ -256,15 +257,18 @@ export default function Settings() {
   const handleAddMonth = (userId: number) => {
     setUsers(users.map(u => {
       if (u.id === userId) {
+        const pkg = subscriptionPackages.find(p => p.id === u.subscriptionPackageId);
+        const monthsToAdd = pkg ? pkg.durationMonths : 1;
+        
         const currentEnd = u.subscriptionEndDate ? new Date(u.subscriptionEndDate) : new Date();
         const now = new Date();
         const baseDate = currentEnd > now ? currentEnd : now;
-        const newEnd = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const newEnd = new Date(baseDate.getTime() + monthsToAdd * 30 * 24 * 60 * 60 * 1000);
         return { ...u, subscriptionEndDate: newEnd.toISOString().split('T')[0] };
       }
       return u;
     }));
-    alert('Kullanıcıya 1 ay süre eklendi.');
+    alert('Kullanıcının abonelik süresi uzatıldı.');
   };
 
   const handleSavePaymentSettings = (e: React.FormEvent) => {
@@ -600,27 +604,46 @@ export default function Settings() {
           </div>
         );
 
-      case 'billing':
+      case 'billing': {
+        const userPackage = subscriptionPackages.find(p => p.id === currentUser?.subscriptionPackageId);
+        const endDate = currentUser?.subscriptionEndDate ? new Date(currentUser.subscriptionEndDate) : null;
+        const now = new Date();
+        const isExpired = endDate ? endDate < now : true;
+        const remainingDays = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+
         return (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Abonelik ve Fatura</h2>
-            <div className="p-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl text-white">
+            <div className={`p-6 rounded-xl text-white ${isExpired ? 'bg-red-600' : 'bg-gradient-to-r from-blue-600 to-indigo-600'}`}>
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h3 className="text-xl font-bold mb-1">Pro Plan</h3>
-                  <p className="text-blue-100 text-sm">Sınırsız kullanıcı ve özellik</p>
+                  <h3 className="text-xl font-bold mb-1">{userPackage ? userPackage.name : 'Deneme Sürümü'}</h3>
+                  <p className="text-blue-100 text-sm">{userPackage ? userPackage.features.join(', ') : '1 Aylık Ücretsiz Deneme'}</p>
                 </div>
                 <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-medium backdrop-blur-sm">
-                  Aktif
+                  {isExpired ? 'Süresi Doldu' : 'Aktif'}
                 </span>
               </div>
               <div className="flex items-end gap-2 mb-6">
-                <span className="text-4xl font-bold">₺499</span>
-                <span className="text-blue-100 mb-1">/ ay</span>
+                {userPackage ? (
+                  <>
+                    <span className="text-4xl font-bold">₺{userPackage.price}</span>
+                    <span className="text-blue-100 mb-1">/ {userPackage.durationMonths} ay</span>
+                  </>
+                ) : (
+                  <span className="text-4xl font-bold">Ücretsiz</span>
+                )}
+              </div>
+              <div className="mb-6">
+                <p className="text-sm text-blue-100">
+                  {isExpired 
+                    ? 'Aboneliğinizin süresi dolmuştur. Lütfen yenileyiniz.' 
+                    : `Kalan Kullanım Süresi: ${remainingDays} Gün (Bitiş: ${endDate?.toLocaleDateString('tr-TR')})`}
+                </p>
               </div>
               <div className="flex gap-3">
-                <button onClick={() => alert('Plan yükseltme işlemi için müşteri hizmetleri ile iletişime geçin.')} className="px-4 py-2 bg-white text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors">
-                  Planı Yükselt
+                <button onClick={() => setShowPaymentInfo(!showPaymentInfo)} className="px-4 py-2 bg-white text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors">
+                  Planı Yükselt / Yenile
                 </button>
                 <button onClick={() => alert('Abonelik iptal işlemi için müşteri hizmetleri ile iletişime geçin.')} className="px-4 py-2 bg-blue-700/50 text-white rounded-lg text-sm font-medium hover:bg-blue-700/70 transition-colors border border-white/10">
                   İptal Et
@@ -628,37 +651,44 @@ export default function Settings() {
               </div>
             </div>
             
-            <div className="mt-8">
-              <h3 className="font-medium text-slate-900 mb-4">Fatura Geçmişi</h3>
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      <th className="px-4 py-3 font-medium text-slate-500">Tarih</th>
-                      <th className="px-4 py-3 font-medium text-slate-500">Tutar</th>
-                      <th className="px-4 py-3 font-medium text-slate-500">Durum</th>
-                      <th className="px-4 py-3 font-medium text-slate-500 text-right">Fatura</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    <tr>
-                      <td className="px-4 py-3 text-slate-900">12 Eki 2024</td>
-                      <td className="px-4 py-3 text-slate-900">₺499,00</td>
-                      <td className="px-4 py-3"><span className="text-emerald-600 font-medium">Ödendi</span></td>
-                      <td className="px-4 py-3 text-right"><button onClick={() => alert('Fatura PDF olarak indiriliyor...')} className="text-blue-600 hover:underline">İndir</button></td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-3 text-slate-900">12 Eyl 2024</td>
-                      <td className="px-4 py-3 text-slate-900">₺499,00</td>
-                      <td className="px-4 py-3"><span className="text-emerald-600 font-medium">Ödendi</span></td>
-                      <td className="px-4 py-3 text-right"><button onClick={() => alert('Fatura PDF olarak indiriliyor...')} className="text-blue-600 hover:underline">İndir</button></td>
-                    </tr>
-                  </tbody>
-                </table>
+            {showPaymentInfo && (
+              <div className="mt-6 bg-slate-50 border border-slate-200 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-slate-900 mb-4">Ödeme Bilgileri</h3>
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Banka</label>
+                    <div className="font-medium text-slate-900">{adminPaymentSettings.bankName || '-'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Alıcı Adı</label>
+                    <div className="font-medium text-slate-900">{adminPaymentSettings.accountHolder || '-'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">IBAN</label>
+                    <div className="font-mono font-medium text-slate-900 bg-white p-2 border border-slate-200 rounded-lg select-all">
+                      {adminPaymentSettings.iban || '-'}
+                    </div>
+                  </div>
+                  {adminPaymentSettings.notes && (
+                    <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm">
+                      <strong>Not:</strong> {adminPaymentSettings.notes}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    alert('Ödeme bildiriminiz yöneticiye başarıyla iletildi. Kontrol edildikten sonra aboneliğiniz onaylanacaktır.');
+                    setShowPaymentInfo(false);
+                  }}
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Ödemeyi Yaptım
+                </button>
               </div>
-            </div>
+            )}
           </div>
         );
+      }
 
       case 'subscription_management':
         return (
@@ -672,13 +702,16 @@ export default function Settings() {
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Kullanıcı</th>
                     <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Rol</th>
-                    <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Abonelik Bitiş</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Paket</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Kalan Süre</th>
                     <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right">İşlem</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {users.map((user) => {
                     const isExpired = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) < new Date() : true;
+                    const remainingDays = user.subscriptionEndDate ? Math.ceil((new Date(user.subscriptionEndDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
+                    
                     return (
                       <tr key={user.id} className="hover:bg-slate-50">
                         <td className="px-6 py-4">
@@ -701,13 +734,39 @@ export default function Settings() {
                         </td>
                         <td className="px-6 py-4">
                           {user.role === 'Admin' ? (
+                            <span className="text-slate-500 text-sm">-</span>
+                          ) : (
+                            <select 
+                              value={user.subscriptionPackageId || ''}
+                              onChange={(e) => {
+                                setUsers(users.map(u => u.id === user.id ? { ...u, subscriptionPackageId: e.target.value || undefined } : u));
+                              }}
+                              className="px-2 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none w-full max-w-[150px]"
+                            >
+                              <option value="">Deneme Sürümü</option>
+                              {subscriptionPackages.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {user.role === 'Admin' ? (
                             <span className="text-slate-500 text-sm">Sınırsız</span>
                           ) : (
-                            <div className="flex flex-col">
-                              <span className={`font-medium ${isExpired ? 'text-red-600' : 'text-emerald-600'}`}>
-                                {user.subscriptionEndDate ? new Date(user.subscriptionEndDate).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}
+                            <div className="flex flex-col gap-1">
+                              {isExpired ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 w-fit">
+                                  Süresi Doldu
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 w-fit">
+                                  {remainingDays} Gün Kaldı
+                                </span>
+                              )}
+                              <span className="text-xs text-slate-500">
+                                Bitiş: {user.subscriptionEndDate ? new Date(user.subscriptionEndDate).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}
                               </span>
-                              {isExpired && <span className="text-xs text-red-500">Süresi Doldu</span>}
                             </div>
                           )}
                         </td>
@@ -718,7 +777,7 @@ export default function Settings() {
                                 onClick={() => handleAddMonth(user.id)}
                                 className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors"
                               >
-                                1 Ay Ekle
+                                Süre Ekle
                               </button>
                               <button 
                                 onClick={() => handleDeleteUser(user.id)}

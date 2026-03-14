@@ -99,6 +99,7 @@ export type UserRole = {
   role: 'Admin' | 'Kullanıcı';
   status: 'Aktif' | 'Pasif';
   subscriptionEndDate?: string;
+  subscriptionPackageId?: string;
 };
 
 export type AdminPaymentSettings = {
@@ -242,10 +243,41 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [companySettings, setCompanySettings] = useState<CompanySettings>(initialCompanySettings);
-  const [users, setUsers] = useState<UserRole[]>(initialUsers);
+  const [users, setUsers] = useState<UserRole[]>(() => {
+    const saved = localStorage.getItem('ofisb_users');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return initialUsers;
+  });
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(initialNotificationSettings);
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings>(initialSecuritySettings);
-  const [currentUser, setCurrentUser] = useState<UserRole | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserRole | null>(() => {
+    const saved = localStorage.getItem('ofisb_currentUser');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return null;
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('ofisb_users', JSON.stringify(users));
+    
+    if (currentUser) {
+      const updatedUser = users.find(u => u.id === currentUser.id);
+      if (updatedUser && JSON.stringify(updatedUser) !== JSON.stringify(currentUser)) {
+        setCurrentUser(updatedUser);
+      }
+    }
+  }, [users, currentUser]);
+
+  React.useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('ofisb_currentUser', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('ofisb_currentUser');
+    }
+  }, [currentUser]);
   const [adminPaymentSettings, setAdminPaymentSettings] = useState<AdminPaymentSettings>(initialAdminPaymentSettings);
   const [subscriptionPackages, setSubscriptionPackages] = useState<SubscriptionPackage[]>(initialSubscriptionPackages);
 

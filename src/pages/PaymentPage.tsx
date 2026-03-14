@@ -85,13 +85,22 @@ export default function PaymentPage() {
                 <strong>Not:</strong> {adminPaymentSettings.notes || 'Lütfen açıklama kısmına kullanıcı adınızı yazmayı unutmayın.'}
               </div>
 
-              <button 
-                onClick={() => setCurrentUser(null)}
-                className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <LogOut size={18} />
-                Çıkış Yap
-              </button>
+              <div className="space-y-3">
+                <button 
+                  onClick={() => alert('Ödeme bildiriminiz yöneticiye başarıyla iletildi. Kontrol edildikten sonra aboneliğiniz onaylanacaktır.')}
+                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 size={18} />
+                  Ödemeyi Yaptım
+                </button>
+                <button 
+                  onClick={() => setCurrentUser(null)}
+                  className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <LogOut size={18} />
+                  Çıkış Yap
+                </button>
+              </div>
             </div>
           </div>
         </div>
