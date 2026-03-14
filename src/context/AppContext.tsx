@@ -105,8 +105,17 @@ export type AdminPaymentSettings = {
   iban: string;
   bankName: string;
   accountHolder: string;
-  monthlyPrice: number;
+  monthlyPrice: number; // Keeping this for backward compatibility if needed, but we'll use packages
   notes: string;
+};
+
+export type SubscriptionPackage = {
+  id: string;
+  name: string;
+  price: number;
+  durationMonths: number;
+  features: string[];
+  isActive: boolean;
 };
 
 export type NotificationSettings = {
@@ -147,6 +156,8 @@ type AppContextType = {
   setCurrentUser: React.Dispatch<React.SetStateAction<UserRole | null>>;
   adminPaymentSettings: AdminPaymentSettings;
   setAdminPaymentSettings: React.Dispatch<React.SetStateAction<AdminPaymentSettings>>;
+  subscriptionPackages: SubscriptionPackage[];
+  setSubscriptionPackages: React.Dispatch<React.SetStateAction<SubscriptionPackage[]>>;
 };
 
 const initialAccounts: Account[] = [];
@@ -191,6 +202,25 @@ const initialAdminPaymentSettings: AdminPaymentSettings = {
   notes: 'Lütfen ödeme açıklamanıza kullanıcı adınızı yazmayı unutmayın.'
 };
 
+const initialSubscriptionPackages: SubscriptionPackage[] = [
+  {
+    id: 'pkg-1',
+    name: 'Aylık Plan',
+    price: 499,
+    durationMonths: 1,
+    features: ['Sınırsız kullanıcı', 'Tüm özellikler', 'Öncelikli destek'],
+    isActive: true
+  },
+  {
+    id: 'pkg-2',
+    name: 'Yıllık Plan',
+    price: 4990,
+    durationMonths: 12,
+    features: ['Sınırsız kullanıcı', 'Tüm özellikler', 'Öncelikli destek', '2 Ay Bizden'],
+    isActive: true
+  }
+];
+
 const initialNotificationSettings: NotificationSettings = {
   emailInvoices: true,
   smsAlerts: false,
@@ -217,6 +247,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings>(initialSecuritySettings);
   const [currentUser, setCurrentUser] = useState<UserRole | null>(null);
   const [adminPaymentSettings, setAdminPaymentSettings] = useState<AdminPaymentSettings>(initialAdminPaymentSettings);
+  const [subscriptionPackages, setSubscriptionPackages] = useState<SubscriptionPackage[]>(initialSubscriptionPackages);
 
   const addIncomeToAccount = (accountId: number, amount: number) => {
     setAccounts(prev => prev.map(acc => 
@@ -250,7 +281,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       notificationSettings, setNotificationSettings,
       securitySettings, setSecuritySettings,
       currentUser, setCurrentUser,
-      adminPaymentSettings, setAdminPaymentSettings
+      adminPaymentSettings, setAdminPaymentSettings,
+      subscriptionPackages, setSubscriptionPackages
     }}>
       {children}
     </AppContext.Provider>

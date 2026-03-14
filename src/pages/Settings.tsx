@@ -11,6 +11,7 @@ export default function Settings() {
     securitySettings, setSecuritySettings,
     currentUser, setCurrentUser,
     adminPaymentSettings, setAdminPaymentSettings,
+    subscriptionPackages, setSubscriptionPackages,
     products, brands, customers, tickets, accounts, invoices
   } = useAppContext();
 
@@ -27,6 +28,67 @@ export default function Settings() {
 
   // File Input Ref for Import
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Subscription Package Modal State
+  const [showPackageModal, setShowPackageModal] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<any>(null);
+  const [newPackage, setNewPackage] = useState({
+    name: '',
+    price: 0,
+    durationMonths: 1,
+    features: '',
+    isActive: true
+  });
+
+  const handleSavePackage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPackage.name || newPackage.price <= 0 || newPackage.durationMonths <= 0) {
+      alert('Lütfen paket adı, fiyatı ve süresini geçerli değerlerle doldurun.');
+      return;
+    }
+
+    const featuresArray = newPackage.features.split('\n').filter(f => f.trim() !== '');
+
+    if (editingPackage) {
+      setSubscriptionPackages(subscriptionPackages.map(pkg => 
+        pkg.id === editingPackage.id 
+          ? { ...editingPackage, ...newPackage, features: featuresArray } 
+          : pkg
+      ));
+    } else {
+      const newPkg = {
+        id: `pkg-${Date.now()}`,
+        name: newPackage.name,
+        price: newPackage.price,
+        durationMonths: newPackage.durationMonths,
+        features: featuresArray,
+        isActive: newPackage.isActive
+      };
+      setSubscriptionPackages([...subscriptionPackages, newPkg]);
+    }
+
+    setShowPackageModal(false);
+    setEditingPackage(null);
+    setNewPackage({ name: '', price: 0, durationMonths: 1, features: '', isActive: true });
+  };
+
+  const handleEditPackage = (pkg: any) => {
+    setEditingPackage(pkg);
+    setNewPackage({
+      name: pkg.name,
+      price: pkg.price,
+      durationMonths: pkg.durationMonths,
+      features: pkg.features.join('\n'),
+      isActive: pkg.isActive
+    });
+    setShowPackageModal(true);
+  };
+
+  const handleDeletePackage = (id: string) => {
+    if (window.confirm('Bu paketi silmek istediğinize emin misiniz?')) {
+      setSubscriptionPackages(subscriptionPackages.filter(pkg => pkg.id !== id));
+    }
+  };
 
   const baseSections = [
     {
@@ -679,65 +741,113 @@ export default function Settings() {
 
       case 'payment_settings':
         return (
-          <form onSubmit={handleSavePaymentSettings} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Ödeme Ayarları</h2>
-            <p className="text-sm text-slate-500 mb-6">Müşterilerinizin abonelik süreleri dolduğunda görecekleri ödeme bilgilerini buradan düzenleyebilirsiniz.</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Banka Adı</label>
-                <input 
-                  type="text" 
-                  value={adminPaymentSettings.bankName}
-                  onChange={(e) => setAdminPaymentSettings({...adminPaymentSettings, bankName: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                />
+          <div className="space-y-6">
+            <form onSubmit={handleSavePaymentSettings} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">Banka ve Ödeme Bilgileri</h2>
+              <p className="text-sm text-slate-500 mb-6">Müşterilerinizin abonelik süreleri dolduğunda görecekleri ödeme bilgilerini buradan düzenleyebilirsiniz.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Banka Adı</label>
+                  <input 
+                    type="text" 
+                    value={adminPaymentSettings.bankName}
+                    onChange={(e) => setAdminPaymentSettings({...adminPaymentSettings, bankName: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Alıcı Adı Soyadı / Ünvan</label>
+                  <input 
+                    type="text" 
+                    value={adminPaymentSettings.accountHolder}
+                    onChange={(e) => setAdminPaymentSettings({...adminPaymentSettings, accountHolder: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">IBAN Numarası</label>
+                  <input 
+                    type="text" 
+                    value={adminPaymentSettings.iban}
+                    onChange={(e) => setAdminPaymentSettings({...adminPaymentSettings, iban: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Müşteriye Notlar</label>
+                  <textarea 
+                    rows={3}
+                    value={adminPaymentSettings.notes}
+                    onChange={(e) => setAdminPaymentSettings({...adminPaymentSettings, notes: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="Örn: Açıklama kısmına kullanıcı adınızı yazmayı unutmayın."
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Alıcı Adı Soyadı / Ünvan</label>
-                <input 
-                  type="text" 
-                  value={adminPaymentSettings.accountHolder}
-                  onChange={(e) => setAdminPaymentSettings({...adminPaymentSettings, accountHolder: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                />
+              <div className="flex justify-end pt-4 border-t border-slate-100">
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2">
+                  <Save size={16} />
+                  Kaydet
+                </button>
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">IBAN Numarası</label>
-                <input 
-                  type="text" 
-                  value={adminPaymentSettings.iban}
-                  onChange={(e) => setAdminPaymentSettings({...adminPaymentSettings, iban: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
-                />
+            </form>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Abonelik Paketleri</h2>
+                  <p className="text-sm text-slate-500">Müşterilerinize sunacağınız abonelik paketlerini yönetin.</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setEditingPackage(null);
+                    setNewPackage({ name: '', price: 0, durationMonths: 1, features: '', isActive: true });
+                    setShowPackageModal(true);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <Plus size={16} />
+                  Yeni Paket
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Aylık Paket Ücreti (₺)</label>
-                <input 
-                  type="number" 
-                  value={adminPaymentSettings.monthlyPrice}
-                  onChange={(e) => setAdminPaymentSettings({...adminPaymentSettings, monthlyPrice: Number(e.target.value)})}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Müşteriye Notlar</label>
-                <textarea 
-                  rows={3}
-                  value={adminPaymentSettings.notes}
-                  onChange={(e) => setAdminPaymentSettings({...adminPaymentSettings, notes: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder="Örn: Açıklama kısmına kullanıcı adınızı yazmayı unutmayın."
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {subscriptionPackages.map(pkg => (
+                  <div key={pkg.id} className={`border rounded-xl p-5 relative ${pkg.isActive ? 'border-blue-200 bg-blue-50/30' : 'border-slate-200 bg-slate-50 opacity-75'}`}>
+                    <div className="absolute top-4 right-4 flex gap-2">
+                      <button onClick={() => handleEditPackage(pkg)} className="p-1 text-slate-400 hover:text-blue-600 transition-colors">
+                        <SettingsIcon size={16} />
+                      </button>
+                      <button onClick={() => handleDeletePackage(pkg.id)} className="p-1 text-slate-400 hover:text-red-600 transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    <div className="mb-4">
+                      <h3 className="font-bold text-lg text-slate-900">{pkg.name}</h3>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className="text-2xl font-bold text-slate-900">₺{pkg.price}</span>
+                        <span className="text-sm text-slate-500">/ {pkg.durationMonths} Ay</span>
+                      </div>
+                    </div>
+                    <ul className="space-y-2 mb-4">
+                      {pkg.features.map((feature, idx) => (
+                        <li key={idx} className="text-sm text-slate-600 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="pt-4 border-t border-slate-200/60 flex justify-between items-center">
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${pkg.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+                        {pkg.isActive ? 'Aktif' : 'Pasif'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="flex justify-end pt-4 border-t border-slate-100">
-              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2">
-                <Save size={16} />
-                Kaydet
-              </button>
-            </div>
-          </form>
+          </div>
         );
 
       default:
@@ -784,6 +894,94 @@ export default function Settings() {
       ) : (
         <div className="max-w-4xl">
           {renderSectionContent()}
+        </div>
+      )}
+
+      {/* Package Modal */}
+      {showPackageModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-900">
+                {editingPackage ? 'Paketi Düzenle' : 'Yeni Paket Ekle'}
+              </h3>
+              <button onClick={() => setShowPackageModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSavePackage} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Paket Adı</label>
+                <input 
+                  type="text" 
+                  required
+                  value={newPackage.name}
+                  onChange={(e) => setNewPackage({...newPackage, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="Örn: Yıllık Plan"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Fiyat (₺)</label>
+                  <input 
+                    type="number" 
+                    required
+                    min="0"
+                    value={newPackage.price}
+                    onChange={(e) => setNewPackage({...newPackage, price: Number(e.target.value)})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Süre (Ay)</label>
+                  <input 
+                    type="number" 
+                    required
+                    min="1"
+                    value={newPackage.durationMonths}
+                    onChange={(e) => setNewPackage({...newPackage, durationMonths: Number(e.target.value)})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Özellikler (Her satıra bir özellik)</label>
+                <textarea 
+                  rows={4}
+                  value={newPackage.features}
+                  onChange={(e) => setNewPackage({...newPackage, features: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="Sınırsız kullanıcı&#10;Tüm özellikler&#10;Öncelikli destek"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  id="isActive"
+                  checked={newPackage.isActive}
+                  onChange={(e) => setNewPackage({...newPackage, isActive: e.target.checked})}
+                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="isActive" className="text-sm font-medium text-slate-700">Aktif (Müşteriler görebilir)</label>
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setShowPackageModal(false)}
+                  className="px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+                >
+                  İptal
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Kaydet
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
