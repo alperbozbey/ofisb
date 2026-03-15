@@ -338,7 +338,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
       }, (error) => {
         // If permission denied (not admin), just fetch current user
-        if (error.code === 'permission-denied') {
+        if (error.code === 'permission-denied' && firebaseUser?.uid) {
           unsubUsers2 = onSnapshot(doc(db, 'users', firebaseUser.uid), (docSnap) => {
             if (docSnap.exists()) {
               const data = docSnap.data();
@@ -390,7 +390,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setCurrentUser(updatedUser);
       }
     }
-  }, [users, currentUser, setCurrentUser]);
+  }, [users, currentUser]); // Removed setCurrentUser from dependency array
 
   const addIncomeToAccount = (accountId: number, amount: number) => {
     setAccounts(prev => prev.map(acc => 
